@@ -1,19 +1,14 @@
 // app/(tabs)/index.tsx
-import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   FlatList,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import DepartureCard from "../../components/DepartureCard";
-import { FavoritesCounter } from "../../components/FavoritesCounter";
 
 export default function HomeScreen() {
-  const router = useRouter(); // <-- Добавлено для навигации
-
   const [departures] = useState([
     {
       id: "1",
@@ -64,21 +59,25 @@ export default function HomeScreen() {
       theoreticalTime: "19:42",
       delayInSeconds: 0,
     },
+    {
+      id: "8",
+      routeId: "N3",
+      headsign: "Dworzec Główny",
+      theoreticalTime: "23:50",
+      delayInSeconds: 130,
+    },
+    {
+      id: "9",
+      routeId: 15,
+      headsign: "Brzeźno",
+      theoreticalTime: "19:48",
+      delayInSeconds: 0,
+    },
   ]);
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Najbliższe odjazdy (Mock)</Text>
-
-      {/* Кнопка перехода на экран логина */}
-      <TouchableOpacity
-        onPress={() => router.push("/(auth)/login")}
-        style={styles.authButton}
-      >
-        <Text style={styles.authButtonText}>Przejdź do logowania (Auth)</Text>
-      </TouchableOpacity>
-
-      <FavoritesCounter />
 
       <FlatList
         data={departures}
@@ -108,17 +107,5 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 16,
     color: "#1F2937",
-  },
-  authButton: {
-    backgroundColor: "#1F2937",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  authButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
-    fontSize: 14,
   },
 });
