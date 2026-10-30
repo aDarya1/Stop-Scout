@@ -1,7 +1,9 @@
 // components/DepartureCard.tsx
 import { StyleSheet, Text, View } from "react-native";
 import { RouteNumber } from "../src/domain/value-objects/RouteNumber";
+import Colors from "../constants/Colors";
 import { DelayHighlight } from "./DelayHighlight";
+import { useColorScheme } from "./useColorScheme";
 
 interface DepartureCardProps {
   routeId: number | string;
@@ -16,17 +18,20 @@ export default function DepartureCard({
   theoreticalTime,
   delayInSeconds,
 }: DepartureCardProps) {
+  const colors = Colors[useColorScheme()];
   const routeNumber = new RouteNumber(routeId);
 
   return (
-    <View style={styles.cardContainer}>
-      <View style={styles.routeBadge}>
-        <Text style={styles.routeText}>{routeNumber.value}</Text>
+    <View style={[styles.cardContainer, { backgroundColor: colors.card }]}>
+      <View
+        style={[styles.routeBadge, { backgroundColor: colors.badgeBackground }]}
+      >
+        <Text style={[styles.routeText, { color: colors.badgeText }]}>{routeNumber.value}</Text>
       </View>
 
       <View style={styles.infoContainer}>
-        <Text style={styles.headsign}>{headsign}</Text>
-        <Text style={styles.timeText}>
+        <Text style={[styles.headsign, { color: colors.headsign }]}>{headsign}</Text>
+        <Text style={[styles.timeText, { color: colors.subtext }]}>
           Planowo: {theoreticalTime} •{" "}
           <DelayHighlight delayInSeconds={delayInSeconds} />
         </Text>
@@ -40,7 +45,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
-    backgroundColor: "#ffffff",
     borderRadius: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -52,13 +56,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#DBEAFE",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
   routeText: {
-    color: "#1D4ED8",
     fontWeight: "bold",
     fontSize: 16,
   },
@@ -68,11 +70,9 @@ const styles = StyleSheet.create({
   headsign: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#374151",
   },
   timeText: {
     fontSize: 12,
-    color: "#6B7280",
     marginTop: 4,
   },
 });

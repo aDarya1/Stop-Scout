@@ -7,8 +7,12 @@ import {
   View,
 } from "react-native";
 import DepartureCard from "../../components/DepartureCard";
+import { useColorScheme } from "../../components/useColorScheme";
+import Colors from "../../constants/Colors";
 
 export default function HomeScreen() {
+  const colors = Colors[useColorScheme()];
+
   const [departures] = useState([
     {
       id: "1",
@@ -76,8 +80,10 @@ export default function HomeScreen() {
   ]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Najbliższe odjazdy (Mock)</Text>
+    <View
+      style={[styles.container, { backgroundColor: colors.screenBackground }]}
+    >
+      <Text style={[styles.header, { color: colors.title }]}>Najbliższe odjazdy (Mock)</Text>
 
       <FlatList
         data={departures}
@@ -100,12 +106,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#F9FAFB",
   },
   header: {
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 16,
-    color: "#1F2937",
   },
 });
