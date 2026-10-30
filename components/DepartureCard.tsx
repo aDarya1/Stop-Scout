@@ -31,10 +31,12 @@ export default function DepartureCard({
 
       <View style={styles.infoContainer}>
         <Text style={[styles.headsign, { color: colors.headsign }]}>{headsign}</Text>
-        <Text style={[styles.timeText, { color: colors.subtext }]}>
-          Planowo: {theoreticalTime} •{" "}
+        <View style={styles.timeRow}>
+          <Text style={[styles.timeText, { color: colors.subtext }]}>
+            Planowo: {theoreticalTime} •{" "}
+          </Text>
           <DelayHighlight delayInSeconds={delayInSeconds} />
-        </Text>
+        </View>
       </View>
     </View>
   );
@@ -71,8 +73,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  timeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
   timeText: {
     fontSize: 12,
-    marginTop: 4,
   },
 });
