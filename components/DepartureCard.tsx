@@ -26,11 +26,15 @@ export default function DepartureCard({
       <View
         style={[styles.routeBadge, { backgroundColor: colors.badgeBackground }]}
       >
-        <Text style={[styles.routeText, { color: colors.badgeText }]}>{routeNumber.value}</Text>
+        <Text style={[styles.routeText, { color: colors.badgeText }]}>
+          {routeNumber.value}
+        </Text>
       </View>
 
       <View style={styles.infoContainer}>
-        <Text style={[styles.headsign, { color: colors.headsign }]}>{headsign}</Text>
+        <Text style={[styles.headsign, { color: colors.headsign }]}>
+          {headsign}
+        </Text>
         <View style={styles.timeRow}>
           <Text style={[styles.timeText, { color: colors.subtext }]}>
             Planowo: {theoreticalTime} •{" "}
