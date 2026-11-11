@@ -1,7 +1,8 @@
 // app/(tabs)/index.tsx
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
@@ -10,67 +11,44 @@ import {
 } from "react-native";
 import DepartureCard from "../../components/DepartureCard";
 import { FavoritesCounter } from "../../components/FavoritesCounter";
+import { container } from "../../src/di/container";
 
 export default function HomeScreen() {
-  const router = useRouter(); // <-- Добавлено для навигации
+  const router = useRouter();
 
-  const [departures] = useState([
-    {
-      id: "1",
-      routeId: 9,
-      headsign: "Strzyża PKM",
-      theoreticalTime: "19:09",
-      delayInSeconds: 12,
-    },
-    {
-      id: "2",
-      routeId: 2,
-      headsign: "Jelitkowo",
-      theoreticalTime: "19:15",
-      delayInSeconds: 0,
-    },
-    {
-      id: "3",
-      routeId: 12,
-      headsign: "Ujeścisko",
-      theoreticalTime: "19:22",
-      delayInSeconds: 150,
-    },
-    {
-      id: "4",
-      routeId: 6,
-      headsign: "Łostowice Świętokrzyska",
-      theoreticalTime: "19:27",
-      delayInSeconds: null,
-    },
-    {
-      id: "5",
-      routeId: 8,
-      headsign: "Stogi Plaża",
-      theoreticalTime: "19:31",
-      delayInSeconds: 45,
-    },
-    {
-      id: "6",
-      routeId: 10177,
-      headsign: "Brętowo PKM",
-      theoreticalTime: "19:36",
-      delayInSeconds: 210,
-    },
-    {
-      id: "7",
-      routeId: 11,
-      headsign: "Lawendowe Wzgórze",
-      theoreticalTime: "19:42",
-      delayInSeconds: 0,
-    },
-  ]);
+  // Состояния для данных и загрузки
+  const [departures, setDepartures] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+
+        // 1. Синхронизируем остановки (скачаем, если база пуста)
+        await container.syncStopsUseCase.execute();
+
+        // 2. Запрашиваем живые отъезды для остановки 2072 (Dworzec Główny)
+        const liveDepartures =
+          await container.getLiveDeparturesUseCase.execute(2072);
+
+        setDepartures(liveDepartures);
+        setError(null);
+      } catch (err: any) {
+        setError(err.message || "Błąd podczas pobierania danych");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Najbliższe odjazdy (Mock)</Text>
+      <Text style={styles.header}>Najbliższe odjazdy (ZTM Gdańsk)</Text>
 
-      {/* Кнопка перехода на экран логина */}
       <TouchableOpacity
         onPress={() => router.push("/(auth)/login")}
         style={styles.authButton}
@@ -80,19 +58,32 @@ export default function HomeScreen() {
 
       <FavoritesCounter />
 
-      <FlatList
-        data={departures}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <DepartureCard
-            routeId={item.routeId}
-            headsign={item.headsign}
-            theoreticalTime={item.theoreticalTime}
-            delayInSeconds={item.delayInSeconds}
-          />
-        )}
-        contentContainerStyle={{ paddingBottom: 20 }}
-      />
+      {/* Показываем индикатор загрузки или текст ошибки */}
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#2563EB"
+          style={{ marginTop: 20 }}
+        />
+      ) : error ? (
+        <Text style={{ color: "red", textAlign: "center", marginTop: 20 }}>
+          {error}
+        </Text>
+      ) : (
+        <FlatList
+          data={departures}
+          keyExtractor={(item, index) => item.id || index.toString()}
+          renderItem={({ item }) => (
+            <DepartureCard
+              routeId={item.routeId}
+              headsign={item.headsign}
+              theoreticalTime={item.theoreticalTime}
+              delayInSeconds={item.delayInSeconds}
+            />
+          )}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
+      )}
     </View>
   );
 }

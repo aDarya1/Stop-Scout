@@ -18,6 +18,20 @@ export default function DepartureCard({
 }: DepartureCardProps) {
   const routeNumber = new RouteNumber(routeId);
 
+  // Функция для превращения "2026-10-26T21:57:00Z" в "23:57"
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return "";
+    if (timeStr.includes("T")) {
+      const date = new Date(timeStr);
+      // toLocaleTimeString автоматически переведет UTC в твой местный часовой пояс
+      return date.toLocaleTimeString("pl-PL", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+    return timeStr;
+  };
+
   return (
     <View style={styles.cardContainer}>
       <View style={styles.routeBadge}>
@@ -27,7 +41,7 @@ export default function DepartureCard({
       <View style={styles.infoContainer}>
         <Text style={styles.headsign}>{headsign}</Text>
         <Text style={styles.timeText}>
-          Planowo: {theoreticalTime} •{" "}
+          Planowo: {formatTime(theoreticalTime)} •{" "}
           <DelayHighlight delayInSeconds={delayInSeconds} />
         </Text>
       </View>
