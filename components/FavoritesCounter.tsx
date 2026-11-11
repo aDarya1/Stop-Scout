@@ -1,5 +1,7 @@
 // components/FavoritesCounter.tsx
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Stop } from "../src/domain/entities/Stop";
+import { Coordinates } from "../src/domain/value-objects/Coordinates";
 import { useStore } from "../src/store/useStore";
 
 export function FavoritesCounter() {
@@ -7,12 +9,13 @@ export function FavoritesCounter() {
   const addStop = useStore((state) => state.addStop);
 
   const handleAddMockStop = () => {
-    addStop({
-      stopId: Date.now(),
-      name: `Przystanek testowy #${count + 1}`,
-      lat: 54.352,
-      lon: 18.646,
-    });
+    addStop(
+      new Stop(
+        Date.now(),
+        `Przystanek testowy #${count + 1}`,
+        new Coordinates(54.352, 18.646),
+      ),
+    );
   };
 
   return (
