@@ -9,11 +9,18 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useColorScheme } from "../../components/useColorScheme";
+import Colors from "../../constants/Colors";
 import { container } from "../../src/di/container";
 import { useStore } from "../../src/store/useStore";
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Nieznany błąd";
+}
+
 export default function LoginScreen() {
   const router = useRouter();
+  const colors = Colors[useColorScheme()];
   const login = useStore((state) => state.login);
 
   const [username, setUsername] = useState("");
@@ -32,8 +39,8 @@ export default function LoginScreen() {
       login(user.id);
       Alert.alert("Sukces", "Konto zostało utworzone!");
       router.replace("/(tabs)");
-    } catch (error: any) {
-      Alert.alert("Błąd rejestracji", error.message);
+    } catch (error) {
+      Alert.alert("Błąd rejestracji", getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -48,20 +55,32 @@ export default function LoginScreen() {
       login(user.id);
       Alert.alert("Sukces", "Zalogowano pomyślnie!");
       router.replace("/(tabs)");
-    } catch (error: any) {
-      Alert.alert("Błąd logowania", error.message);
+    } catch (error) {
+      Alert.alert("Błąd logowania", getErrorMessage(error));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Stop Scout</Text>
-      <Text style={styles.subtitle}>Zaloguj się lub utwórz konto</Text>
+    <View
+      style={[styles.container, { backgroundColor: colors.screenBackground }]}
+    >
+      <Text style={[styles.title, { color: colors.title }]}>Stop Scout</Text>
+      <Text style={[styles.subtitle, { color: colors.subtext }]}>
+        Zaloguj się lub utwórz konto
+      </Text>
 
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            color: colors.title,
+          },
+        ]}
+        placeholderTextColor={colors.subtext}
         placeholder="Nazwa użytkownika (login)"
         value={username}
         onChangeText={setUsername}
@@ -69,7 +88,15 @@ export default function LoginScreen() {
       />
 
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            color: colors.title,
+          },
+        ]}
+        placeholderTextColor={colors.subtext}
         placeholder="Hasło"
         value={password}
         onChangeText={setPassword}
@@ -98,7 +125,7 @@ export default function LoginScreen() {
         onPress={() => router.replace("/(tabs)")}
         style={{ marginTop: 20 }}
       >
-        <Text style={{ color: "#6B7280", textAlign: "center" }}>
+        <Text style={{ color: colors.subtext, textAlign: "center" }}>
           Pomiń (Przejdź do aplikacji)
         </Text>
       </TouchableOpacity>
@@ -111,25 +138,20 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: "center",
-    backgroundColor: "#F9FAFB",
   },
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#1F2937",
     textAlign: "center",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: "#6B7280",
     textAlign: "center",
     marginBottom: 32,
   },
   input: {
-    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#D1D5DB",
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,

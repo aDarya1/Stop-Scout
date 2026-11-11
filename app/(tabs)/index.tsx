@@ -1,12 +1,13 @@
 // app/(tabs)/index.tsx
+import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import DepartureCard from "../../components/DepartureCard";
@@ -18,8 +19,15 @@ import { Departure } from "../../src/domain/entities/Departure";
 import { Stop } from "../../src/domain/entities/Stop";
 import { useStore } from "../../src/store/useStore";
 
-// Dworzec Główny
+// Wyspiańskiego
 const STOP_ID = 2072;
+const REFRESH_INTERVAL_MS = 30000;
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "Błąd podczas pobierania danych";
+}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -27,7 +35,6 @@ export default function HomeScreen() {
 
   const user = useStore((state) => state.user);
   const favoriteStops = useStore((state) => state.favoriteStops);
-  const logout = useStore((state) => state.logout);
   const loadFavorites = useStore((state) => state.loadFavorites);
   const addFavoriteOptimistic = useStore(
     (state) => state.addFavoriteOptimistic,
@@ -39,39 +46,50 @@ export default function HomeScreen() {
   const [stop, setStop] = useState<Stop | null>(null);
   const [departures, setDepartures] = useState<Departure[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Odjazdy na żywo szybko się starzeją, więc pobieramy je wielokrotnie
+  const loadDepartures = useCallback(async () => {
+    try {
+      setDepartures(await container.liveDeparturesUseCase.execute(STOP_ID));
+      setError(null);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  }, []);
 
   useEffect(() => {
     async function loadData() {
       try {
-        setLoading(true);
-
-        // 1. Synchronizujemy przystanki (pobieramy, jeśli baza jest pusta)
+        // Synchronizujemy przystanki (pobieramy, jeśli baza jest pusta)
         const stops = await container.syncStopsUseCase.execute();
         setStop(stops.find((s) => s.stopId === STOP_ID) ?? null);
 
-        // 2. Pobieramy odjazdy na żywo dla wybranego przystanku
-        const liveDepartures =
-          await container.liveDeparturesUseCase.execute(STOP_ID);
-
-        setDepartures(liveDepartures);
-        setError(null);
+        await loadDepartures();
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Błąd podczas pobierania danych",
-        );
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }
     }
 
     loadData();
-  }, []);
+
+    const timer = setInterval(loadDepartures, REFRESH_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [loadDepartures]);
 
   // Po zalogowaniu wczytujemy zapisane ulubione przystanki z SQLite
   useEffect(() => {
     loadFavorites(container.stopRepository).catch(console.error);
   }, [user, loadFavorites]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadDepartures();
+    setRefreshing(false);
+  };
 
   const isFavorite = stop !== null && favoriteStops.some((s) => s.equals(stop));
 
@@ -89,14 +107,6 @@ export default function HomeScreen() {
     }
   };
 
-  const handleAuthPress = () => {
-    if (user) {
-      logout();
-    } else {
-      router.push("/(auth)/login");
-    }
-  };
-
   return (
     <View
       style={[styles.container, { backgroundColor: colors.screenBackground }]}
@@ -104,45 +114,30 @@ export default function HomeScreen() {
       <Text style={[styles.header, { color: colors.title }]}>
         Najbliższe odjazdy (ZTM Gdańsk)
       </Text>
-      {stop ? (
-        <Text style={[styles.stopName, { color: colors.subtext }]}>
-          {stop.stopName}
-        </Text>
-      ) : null}
 
-      <TouchableOpacity onPress={handleAuthPress} style={styles.authButton}>
-        <Text style={styles.authButtonText}>
-          {user ? "Wyloguj się" : "Przejdź do logowania (Auth)"}
-        </Text>
-      </TouchableOpacity>
+      {stop ? (
+        <View style={styles.stopRow}>
+          <Text style={[styles.stopName, { color: colors.subtext }]}>
+            Przystanek: {stop.stopName}
+          </Text>
+          <Pressable onPress={handleToggleFavorite} hitSlop={12}>
+            <FontAwesome
+              name={isFavorite ? "star" : "star-o"}
+              size={26}
+              color="#F59E0B"
+            />
+          </Pressable>
+        </View>
+      ) : null}
 
       <FavoritesCounter />
 
-      {stop ? (
-        <TouchableOpacity
-          onPress={handleToggleFavorite}
-          style={[
-            styles.favoriteButton,
-            isFavorite && styles.favoriteActive,
-          ]}
-        >
-          <Text style={styles.authButtonText}>
-            {isFavorite
-              ? "Usuń przystanek z ulubionych"
-              : "Dodaj przystanek do ulubionych"}
-          </Text>
-        </TouchableOpacity>
-      ) : null}
-
-      {/* Pokazujemy wskaźnik ładowania albo tekst błędu */}
       {loading ? (
         <ActivityIndicator
           size="large"
           color="#2563EB"
           style={{ marginTop: 20 }}
         />
-      ) : error ? (
-        <Text style={styles.errorText}>{error}</Text>
       ) : (
         <FlatList
           data={departures}
@@ -155,6 +150,18 @@ export default function HomeScreen() {
               delayInSeconds={item.delay.seconds}
             />
           )}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={
+            <Text
+              style={[
+                styles.emptyText,
+                error ? styles.errorText : { color: colors.subtext },
+              ]}
+            >
+              {error ?? "Brak odjazdów w najbliższym czasie."}
+            </Text>
+          }
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
@@ -170,37 +177,23 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 4,
+    marginBottom: 8,
+  },
+  stopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
   },
   stopName: {
-    fontSize: 14,
-    marginBottom: 16,
-  },
-  authButton: {
-    backgroundColor: "#1F2937",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  authButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
+    flex: 1,
     fontSize: 14,
   },
-  favoriteButton: {
-    backgroundColor: "#2563EB",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  favoriteActive: {
-    backgroundColor: "#DC2626",
+  emptyText: {
+    textAlign: "center",
+    marginTop: 20,
   },
   errorText: {
     color: "red",
-    textAlign: "center",
-    marginTop: 20,
   },
 });
