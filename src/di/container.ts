@@ -22,23 +22,23 @@ class AppContainer {
 
   public get authRepository(): IAuthRepository {
     if (!this._authRepo) this._authRepo = new SqliteAuthRepository();
-    return this._authRepo!; // <-- Добавлен !
+    return this._authRepo;
   }
 
   public get passwordHasher(): IPasswordHasher {
     if (!this._passwordHasher)
       this._passwordHasher = new BcryptPasswordHasher();
-    return this._passwordHasher!; // <-- Добавлен !
+    return this._passwordHasher;
   }
 
   public get stopRepository(): IStopRepository {
     if (!this._stopRepo) this._stopRepo = new SqliteStopRepository();
-    return this._stopRepo!; // <-- Добавлен !
+    return this._stopRepo;
   }
 
   public get ztmApiRepository(): IZtmApiRepository {
     if (!this._ztmApi) this._ztmApi = new ZtmApiClient();
-    return this._ztmApi!; // <-- Добавлен !
+    return this._ztmApi;
   }
 
   public get registerUserUseCase(): RegisterUserUseCase {
@@ -53,7 +53,7 @@ class AppContainer {
     return new SyncStopsUseCase(this.stopRepository, this.ztmApiRepository);
   }
 
-  public get getLiveDeparturesUseCase(): GetLiveDeparturesUseCase {
+  public get liveDeparturesUseCase(): GetLiveDeparturesUseCase {
     return new GetLiveDeparturesUseCase(this.ztmApiRepository);
   }
 }
