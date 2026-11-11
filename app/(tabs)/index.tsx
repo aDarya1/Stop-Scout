@@ -8,10 +8,10 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import DepartureCard from "../../components/DepartureCard";
-import { FavoritesCounter } from "../../components/FavoritesCounter";
 import { useColorScheme } from "../../components/useColorScheme";
 import Colors from "../../constants/Colors";
 import { container } from "../../src/di/container";
@@ -19,8 +19,6 @@ import { Departure } from "../../src/domain/entities/Departure";
 import { Stop } from "../../src/domain/entities/Stop";
 import { useStore } from "../../src/store/useStore";
 
-// Wyspiańskiego
-const STOP_ID = 2072;
 const REFRESH_INTERVAL_MS = 30000;
 
 function getErrorMessage(error: unknown): string {
@@ -34,6 +32,7 @@ export default function HomeScreen() {
   const colors = Colors[useColorScheme()];
 
   const user = useStore((state) => state.user);
+  const selectedStopId = useStore((state) => state.selectedStopId);
   const favoriteStops = useStore((state) => state.favoriteStops);
   const loadFavorites = useStore((state) => state.loadFavorites);
   const addFavoriteOptimistic = useStore(
@@ -43,38 +42,37 @@ export default function HomeScreen() {
     (state) => state.removeFavoriteOptimistic,
   );
 
-  const [stop, setStop] = useState<Stop | null>(null);
+  const [stops, setStops] = useState<Stop[]>([]);
   const [departures, setDepartures] = useState<Departure[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const stop = stops.find((s) => s.stopId === selectedStopId) ?? null;
+
+  // Przystanki synchronizujemy raz (pobieramy, jeśli baza jest pusta)
+  useEffect(() => {
+    container.syncStopsUseCase
+      .execute()
+      .then(setStops)
+      .catch((err) => setError(getErrorMessage(err)));
+  }, []);
+
   // Odjazdy na żywo szybko się starzeją, więc pobieramy je wielokrotnie
   const loadDepartures = useCallback(async () => {
     try {
-      setDepartures(await container.liveDeparturesUseCase.execute(STOP_ID));
+      setDepartures(
+        await container.liveDeparturesUseCase.execute(selectedStopId),
+      );
       setError(null);
     } catch (err) {
       setError(getErrorMessage(err));
     }
-  }, []);
+  }, [selectedStopId]);
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        // Synchronizujemy przystanki (pobieramy, jeśli baza jest pusta)
-        const stops = await container.syncStopsUseCase.execute();
-        setStop(stops.find((s) => s.stopId === STOP_ID) ?? null);
-
-        await loadDepartures();
-      } catch (err) {
-        setError(getErrorMessage(err));
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadData();
+    setLoading(true);
+    loadDepartures().finally(() => setLoading(false));
 
     const timer = setInterval(loadDepartures, REFRESH_INTERVAL_MS);
     return () => clearInterval(timer);
@@ -115,22 +113,27 @@ export default function HomeScreen() {
         Najbliższe odjazdy (ZTM Gdańsk)
       </Text>
 
-      {stop ? (
-        <View style={styles.stopRow}>
-          <Text style={[styles.stopName, { color: colors.subtext }]}>
-            Przystanek: {stop.stopName}
-          </Text>
-          <Pressable onPress={handleToggleFavorite} hitSlop={12}>
-            <FontAwesome
-              name={isFavorite ? "star" : "star-o"}
-              size={26}
-              color="#F59E0B"
-            />
-          </Pressable>
-        </View>
-      ) : null}
+      <View style={styles.stopRow}>
+        <Text style={[styles.stopName, { color: colors.subtext }]}>
+          Przystanek: {stop ? stop.stopName : `nr ${selectedStopId}`}
+        </Text>
+        <Pressable onPress={handleToggleFavorite} hitSlop={12}>
+          <FontAwesome
+            name={isFavorite ? "star" : "star-o"}
+            size={26}
+            color="#F59E0B"
+          />
+        </Pressable>
+      </View>
 
-      <FavoritesCounter />
+      <TouchableOpacity
+        onPress={() => router.push("/search")}
+        style={[styles.changeButton, { borderColor: colors.border }]}
+      >
+        <Text style={[styles.changeButtonText, { color: colors.title }]}>
+          Zmień przystanek
+        </Text>
+      </TouchableOpacity>
 
       {loading ? (
         <ActivityIndicator
@@ -183,10 +186,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   stopName: {
     flex: 1,
+    fontSize: 14,
+  },
+  changeButton: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  changeButtonText: {
+    fontWeight: "bold",
     fontSize: 14,
   },
   emptyText: {

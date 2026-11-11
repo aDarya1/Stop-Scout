@@ -3,11 +3,17 @@ import { create } from "zustand";
 import { Stop } from "../domain/entities/Stop";
 import { IStopRepository } from "../domain/repositories/IStopRepository";
 
+// Dworzec Główny ma wiele słupków, więc na start pokazujemy przykładowy przystanek
+const DEFAULT_STOP_ID = 2072;
+
 interface AppState {
   user: string | null;
+  username: string | null;
+  selectedStopId: number;
   favoriteStops: Stop[];
-  login: (userId: string) => void;
+  login: (userId: string, username: string) => void;
   logout: () => void;
+  selectStop: (stopId: number) => void;
   setFavorites: (stops: Stop[]) => void;
   addStop: (stop: Stop) => void;
   removeStop: (stopId: number) => void;
@@ -21,10 +27,14 @@ interface AppState {
 
 export const useStore = create<AppState>((set, get) => ({
   user: null,
+  username: null,
+  selectedStopId: DEFAULT_STOP_ID,
   favoriteStops: [],
 
-  login: (userId) => set({ user: userId }),
-  logout: () => set({ user: null, favoriteStops: [] }),
+  login: (userId, username) => set({ user: userId, username }),
+  logout: () => set({ user: null, username: null, favoriteStops: [] }),
+
+  selectStop: (stopId) => set({ selectedStopId: stopId }),
 
   setFavorites: (stops) => set({ favoriteStops: stops }),
 

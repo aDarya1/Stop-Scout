@@ -36,7 +36,7 @@ export default function LoginScreen() {
         username,
         password,
       );
-      login(user.id);
+      login(user.id, user.username);
       Alert.alert("Sukces", "Konto zostało utworzone!");
       router.replace("/(tabs)");
     } catch (error) {
@@ -52,7 +52,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       const user = await container.loginUserUseCase.execute(username, password);
-      login(user.id);
+      login(user.id, user.username);
       Alert.alert("Sukces", "Zalogowano pomyślnie!");
       router.replace("/(tabs)");
     } catch (error) {
