@@ -11,10 +11,13 @@ import {
 } from "react-native";
 import DepartureCard from "../../components/DepartureCard";
 import { FavoritesCounter } from "../../components/FavoritesCounter";
+import { useColorScheme } from "../../components/useColorScheme";
+import Colors from "../../constants/Colors";
 import { container } from "../../src/di/container";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const colors = Colors[useColorScheme()];
 
   // Состояния для данных и загрузки
   const [departures, setDepartures] = useState<any[]>([]);
@@ -46,8 +49,10 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Najbliższe odjazdy (ZTM Gdańsk)</Text>
+    <View
+      style={[styles.container, { backgroundColor: colors.screenBackground }]}
+    >
+      <Text style={[styles.header, { color: colors.title }]}>Najbliższe odjazdy (ZTM Gdańsk)</Text>
 
       <TouchableOpacity
         onPress={() => router.push("/(auth)/login")}
@@ -92,13 +97,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#F9FAFB",
   },
   header: {
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 16,
-    color: "#1F2937",
   },
   authButton: {
     backgroundColor: "#1F2937",

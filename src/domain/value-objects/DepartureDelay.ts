@@ -29,4 +29,9 @@ export class DepartureDelay {
   public isDelayed(): boolean {
     return this.seconds > 0;
   }
+
+  public equals(other: DepartureDelay | null | undefined): boolean {
+    if (!other) return false;
+    return this.seconds === other.seconds;
+  }
 }
