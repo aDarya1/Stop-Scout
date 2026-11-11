@@ -1,4 +1,5 @@
 // src/use-cases/SyncStopsUseCase.ts
+import { Stop } from "../domain/entities/Stop";
 import { IStopRepository } from "../domain/repositories/IStopRepository";
 import { IZtmApiRepository } from "../domain/repositories/IZtmApiRepository";
 
@@ -8,22 +9,26 @@ export class SyncStopsUseCase {
     private readonly apiRepository: IZtmApiRepository,
   ) {}
 
-  public async execute(): Promise<void> {
+  public async execute(forceRefresh = false): Promise<Stop[]> {
+    await this.stopRepository.initDatabase();
+
     const localStops = await this.stopRepository.getAllStops();
 
     // Jeśli przystanki są już w bazie, nie pobieramy ich ponownie
-    if (localStops.length > 0) {
+    if (!forceRefresh && localStops.length > 0) {
       console.log(
         "Przystanki są już w pamięci podręcznej. Pobieranie nie jest wymagane.",
       );
-      return;
+      return localStops;
     }
 
-    console.log("Baza jest pusta. Pobieranie przystanków z API ZTM...");
+    console.log("Pobieranie przystanków z API ZTM...");
     const apiStops = await this.apiRepository.fetchStopsFromApi();
 
     // Zapisujemy pobrane dane do lokalnej bazy SQLite
     await this.stopRepository.saveStops(apiStops);
     console.log(`Zapisano ${apiStops.length} przystanków.`);
+
+    return apiStops;
   }
 }
