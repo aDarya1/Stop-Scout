@@ -2,6 +2,9 @@
 import { Departure } from "../../domain/entities/Departure";
 import { Stop } from "../../domain/entities/Stop";
 import { IZtmApiRepository } from "../../domain/repositories/IZtmApiRepository";
+import { ZtmDepartureDto } from "./dto/ZtmDepartureDto";
+import { ZtmStopDto } from "./dto/ZtmStopDto";
+import { ZtmApiMapper } from "./mappers/ZtmApiMapper";
 
 export class ZtmApiClient implements IZtmApiRepository {
   private readonly STOPS_URL =
@@ -11,33 +14,35 @@ export class ZtmApiClient implements IZtmApiRepository {
 
   async fetchStopsFromApi(): Promise<Stop[]> {
     const response = await fetch(this.STOPS_URL);
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        `Nie udało się pobrać przystanków (HTTP ${response.status}).`,
+      );
+    }
 
+    // Pierwszy klucz w pliku to data, a pod nią leży tablica "stops"
+    const data: Record<string, { stops: ZtmStopDto[] }> =
+      await response.json();
     const dateKey = Object.keys(data)[0];
-    const rawStops = data[dateKey].stops;
 
-    return rawStops.map((s: any) => ({
-      stopId: s.stopId,
-      stopName: s.stopName || s.stopDesc || `Przystanek #${s.stopId}`,
-      stopDesc: s.stopDesc,
-      stopLat: s.stopLat,
-      stopLon: s.stopLon,
-    }));
+    return data[dateKey].stops
+      .filter((dto) => dto.stopId && dto.stopLat && dto.stopLon)
+      .map((dto) => ZtmApiMapper.toStopEntity(dto));
   }
 
   async fetchDepartures(stopId: number): Promise<Departure[]> {
     const response = await fetch(`${this.DEPARTURES_URL}${stopId}`);
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        `Nie udało się pobrać odjazdów (HTTP ${response.status}).`,
+      );
+    }
 
-    const rawDepartures = data.departures || [];
+    const data: { departures?: ZtmDepartureDto[] } = await response.json();
+    const rawDepartures = data.departures ?? [];
 
-    return rawDepartures.map((d: any) => ({
-      id: d.id || Math.random().toString(),
-      routeId: d.routeId,
-      headsign: d.headsign,
-      theoreticalTime: d.theoreticalTime,
-      estimatedTime: d.estimatedTime,
-      delayInSeconds: d.delayInSeconds,
-    }));
+    return rawDepartures.map((dto, index) =>
+      ZtmApiMapper.toDepartureEntity(dto, index),
+    );
   }
 }
